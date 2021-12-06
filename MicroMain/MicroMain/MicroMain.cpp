@@ -19,19 +19,29 @@
 
 // Глобальные переменные:
 HINSTANCE hInst;                                // текущий экземпляр
-HWND hWnd, My;//Основное окно
+HWND hWnd;//Основное окно
 HWND StringEx;//ButtonMusicTest
 HWND SreenFull;
 HWND WindowsSizeSreen;
 HWND ExitButt;
 HWND OptionButt;
 HWND GameButt;
-HWND  Button;
+HWND  ButtonLevel1Start;
 HWND BackButt;
-HWND ButtGameStart;
 HWND NextLevelButt;
 HWND LastLevelButt;
 
+//Потоки
+HANDLE  hThreadFon;
+DWORD  dwThreadId;
+
+HANDLE  hThreadGame;
+DWORD   dwThreadIdGame;
+
+
+long timeMusic = 22080;
+HRESULT hr;
+bool FlagGameStart;
 
 LPWSTR SoftMusic = (LPWSTR)L"..\\Music\\ZeroBlood.mp3";
 LPWSTR SoftLevel1Music = (LPWSTR)L"..\\Music\\AM.mp3";
@@ -39,6 +49,13 @@ LPWSTR SoftLevel2Music = (LPWSTR)L"..\\Music\\Viagra.mp3";
 LPWSTR SoftLevel3Music = (LPWSTR)L"..\\Music\\Yarmak.mp3";
 
 LPWSTR UserLevelMusic = (LPWSTR)L"";
+
+LPWSTR SoftBackground = (LPWSTR)L"..\\BackgroundGame\\Menu.bmp";
+LPWSTR SoftLevel1Background = (LPWSTR)L"..\\BackgroundGame\\Level1.bmp";
+LPWSTR SoftLevel2Background = (LPWSTR)L"";
+LPWSTR SoftLevel3Background = (LPWSTR)L"";
+
+LPWSTR UsengBackground;
 
 DWORD   dwThreadIdMusiBackground;
 HANDLE  hThreadMusicBackground;
@@ -59,14 +76,14 @@ LPWSTR UserPathMusic;
 //Предобъявление
 VOID MidiWin(LPWSTR Path);
 VOID TreaderMusic(LPWSTR Path);
+VOID TreaderMusicGame(LPWSTR Path);
 VOID StartGame();
 VOID SetBackgroundIcons();
 VOID DrawButton(LPDRAWITEMSTRUCT lpInfo);
-VOID TreaderBackgroundMusic(LPWSTR Path);
 bool enterFullscreen(HWND hwnd, int fullscreenWidth, int fullscreenHeight, int colourBits, int refreshRate);
 bool exitFullscreen(HWND hwnd, int windowX, int windowY, int windowedWidth, int windowedHeight, int windowedPaddingX, int windowedPaddingY);
 
-void MyButton(HWND & hwnd, int x, int y, int Width, int Height, int xe, int xy, HWND hParent);
+void MyButton(HWND & hwnd, int x, int y, int Width, int Height, int xe, int xy, UINT num, HWND hParent);
 
 //Сообщение
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -133,10 +150,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    //11
    hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, 0, hInstance, nullptr);
 
    //Игра
-   Button = CreateWindow(L"button", L"Начать игру", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+   StringEx = CreateWindowEx(NULL, L"Edit", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL,
+       10, 60, 250, 30, hWnd, (HMENU)2, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
+  /* Button = CreateWindow(L"button", L"Начать игру", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
        700, 560, 120, 30, hWnd, (HMENU)4, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
    StringEx = CreateWindowEx(NULL, L"Edit", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL,
        10, 60, 250, 30, hWnd, (HMENU)2, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
@@ -146,27 +165,39 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
        950, 400, 30, 30, hWnd, (HMENU)10, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
    LastLevelButt = CreateWindow(L"button", L"L", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
        550, 400, 30, 30, hWnd, (HMENU)11, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
-
+*/
+   MyButton(ButtonLevel1Start, 700, 560, 120, 30, 40, 30, 4, hWnd);
+   MyButton(FaliOpen, 300, 200, 150, 30, 40, 30, 5, hWnd);
+   MyButton(NextLevelButt, 950, 400,  30, 30, 40, 30, 10, hWnd);
+   MyButton(LastLevelButt, 550, 400,  30, 30, 40, 30, 11, hWnd);
 
 
    //Настройки
-   SreenFull = CreateWindow(L"button", L"Полноэкраный", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-       600, 480, 120, 30, hWnd, (HMENU)1, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
-   WindowsSizeSreen = CreateWindow(L"button", L"Оконый", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-       600, 520, 120, 30, hWnd, (HMENU)3, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
+
+   //SreenFull = CreateWindow(L"button", L"Полноэкраный", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+   //    600, 480, 120, 30, hWnd, (HMENU)1, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
+   //WindowsSizeSreen = CreateWindow(L"button", L"Оконый", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+   //    600, 520, 120, 30, hWnd, (HMENU)3, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
+   MyButton(SreenFull, 600, 480, 120, 30, 40, 30, 1, hWnd);
+   MyButton(WindowsSizeSreen, 600, 520, 120, 30, 40, 30, 3, hWnd);
 
    //Меню
-   GameButt = CreateWindow(L"button", L"Игра", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_OWNERDRAW,
-       700, 440, 120, 30, hWnd, (HMENU)8, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
-   OptionButt = CreateWindow(L"button", L"Настройки", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+
+  // GameButt = CreateWindow(L"button", L"Игра", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_OWNERDRAW,
+   //    700, 440, 120, 30, hWnd, (HMENU)8, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
+  /* OptionButt = CreateWindow(L"button", L"Настройки", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
        700, 530, 120, 30, hWnd, (HMENU)7, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
    ExitButt = CreateWindow(L"button", L"Выход", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-       700, 620, 120, 30, hWnd, (HMENU)6, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
+       700, 620, 120, 30, hWnd, (HMENU)6, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);*/
+   MyButton(GameButt, 700, 440, 120, 30, 40, 30, 8, hWnd);
+   MyButton(OptionButt, 700, 530, 120, 30, 40, 30, 7, hWnd);
+   MyButton(ExitButt, 700, 620, 120, 30, 40, 30, 6, hWnd);
 
-
-   BackButt = CreateWindow(L"Button", L"Назад", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-       700, 620, 120, 30 ,hWnd, (HMENU)9, (HINSTANCE)GetWindowLong(hWnd, -6),NULL);
+   /*BackButt = CreateWindow(L"Button", L"Назад", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+       700, 620, 120, 30 ,hWnd, (HMENU)9, (HINSTANCE)GetWindowLong(hWnd, -6),NULL);*/
    
+   MyButton(BackButt, 700, 620, 120, 30, 40, 30, 9, hWnd);
+
   // ButtGameStart = CreateWindow(L"Button", L"Назад", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
     //   700, 520, 120, 30, hWnd, (HMENU)10, (HINSTANCE)GetWindowLong(hWnd, -6), NULL);
 
@@ -182,25 +213,28 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
   // SetBackgroundIcons();
 
    //TreaderMusic(SoftMusic);
-   //TreaderBackgroundMusic(SoftMusic);
+   TreaderMusic(SoftMusic);
 
    //Экран начало
    enterFullscreen(hWnd, 1080, 1920, 5, 60);
 
    ShowWindow(StringEx, SW_HIDE);
-   ShowWindow(ButtGameStart, SW_HIDE);
+   //ShowWindow(ButtGameStart, SW_HIDE);
    ShowWindow(SreenFull, SW_HIDE);
    ShowWindow(BackButt, SW_HIDE);
    ShowWindow(WindowsSizeSreen, SW_HIDE);
-   ShowWindow(Button, SW_HIDE);
+   ShowWindow(ButtonLevel1Start, SW_HIDE);
    ShowWindow(FaliOpen, SW_HIDE);
    ShowWindow(NextLevelButt, SW_HIDE);
    ShowWindow(LastLevelButt, SW_HIDE);
 
-   MyButton(My, 10, 10, 100, 30, 20, 20, hWnd);
+   //Изменение цвета при наведении
+   SetWindowLong(FaliOpen, GWL_EXSTYLE, GetWindowLong(FaliOpen, GWL_EXSTYLE) | WS_EX_LAYERED);
+   SetLayeredWindowAttributes(FaliOpen, RGB(255, 0, 0), 10, LWA_COLORKEY);
 
-   SetWindowLong(My, GWL_EXSTYLE, GetWindowLong(My, GWL_EXSTYLE) | WS_EX_LAYERED);
-   SetLayeredWindowAttributes(My, RGB(255, 0, 0), 10, LWA_COLORKEY);
+   FlagGameStart = false;
+
+   UsengBackground = SoftBackground;
 
    return TRUE;
 }
@@ -220,8 +254,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 //Музыка
                 case 4:
                 {
-                    TreaderMusic(SoftMusic);
-                    //MidiWin(SoftMusic);
+                    //TreaderMusicGame(SoftLevel1Music);
+
+                   // pEvent->Release();
+
+                   // ResumeThread(hThreadFon);
+                   // SuspendThread(hThreadFon);
+                  //  DestroyWindow(hThreadFon);
+                    //CloseHandle(hThreadFon);
+
+                    ShowWindow(StringEx, SW_HIDE);
+                    ShowWindow(BackButt, SW_HIDE);
+                    ShowWindow(ButtonLevel1Start, SW_HIDE);
+                    ShowWindow(NextLevelButt, SW_HIDE);
+                    ShowWindow(LastLevelButt, SW_HIDE);
+                    ShowWindow(FaliOpen, SW_HIDE);
+
+                    FlagGameStart = true;
+
+                    StartGame();
                 }
                 break;
 
@@ -260,8 +311,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
                     GetOpenFileName(&ofn);
 
-                    SetWindowText(StringEx, ofn.lpstrFile);
                     UserPathMusic = ofn.lpstrFile;
+                    SetWindowText(StringEx, (LPWSTR)ofn.lpstrFile);
+                   // UserPathMusic = ofn.lpstrFile;
+
+                    //SetBackgroundIcons();
                 }
                 break;
 
@@ -288,11 +342,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 //Играть
                 case 8:
                 {
-                    ShowWindow(Button, SW_SHOW);
+                    ShowWindow(ButtonLevel1Start, SW_SHOW);
                     ShowWindow(FaliOpen, SW_SHOW);
                     ShowWindow(StringEx, SW_SHOW);
                     ShowWindow(BackButt, SW_SHOW);
-                    ShowWindow(ButtGameStart, SW_SHOW);
+                   // ShowWindow(ButtGameStart, SW_SHOW);
 
                     ShowWindow(GameButt, SW_HIDE);
                     ShowWindow(OptionButt, SW_HIDE);
@@ -307,28 +361,51 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 //Назад
                 case 9:
                 {
-                    ShowWindow(GameButt, SW_SHOW);
-                    ShowWindow(OptionButt, SW_SHOW);
-                    ShowWindow(ExitButt, SW_SHOW);
+                    if (FlagGameStart == false) {
+                        ShowWindow(GameButt, SW_SHOW);
+                        ShowWindow(OptionButt, SW_SHOW);
+                        ShowWindow(ExitButt, SW_SHOW);
 
-                    ShowWindow(Button, SW_HIDE);
-                    ShowWindow(FaliOpen, SW_HIDE);
-                    ShowWindow(StringEx, SW_HIDE);
-                    ShowWindow(SreenFull, SW_HIDE);
-                    ShowWindow(WindowsSizeSreen, SW_HIDE);
-                    ShowWindow(NextLevelButt, SW_HIDE);
-                    ShowWindow(LastLevelButt, SW_HIDE);
-                    ShowWindow(BackButt, SW_HIDE);
+                        ShowWindow(ButtonLevel1Start, SW_HIDE);
+                        ShowWindow(FaliOpen, SW_HIDE);
+                        ShowWindow(StringEx, SW_HIDE);
+                        ShowWindow(SreenFull, SW_HIDE);
+                        ShowWindow(WindowsSizeSreen, SW_HIDE);
+                        ShowWindow(NextLevelButt, SW_HIDE);
+                        ShowWindow(LastLevelButt, SW_HIDE);
+                        ShowWindow(BackButt, SW_HIDE);
+                    }
+                    if (FlagGameStart == true)
+                    {
+                        UsengBackground = SoftBackground;
+
+                        ShowWindow(ButtonLevel1Start, SW_SHOW);
+                        ShowWindow(FaliOpen, SW_SHOW);
+                        ShowWindow(StringEx, SW_SHOW);
+                        ShowWindow(NextLevelButt, SW_SHOW);
+                        ShowWindow(LastLevelButt, SW_SHOW);
+
+                        ShowWindow(BackButt, SW_HIDE);
+                        ShowWindow(BackButt, SW_SHOW);
+
+                        FlagGameStart = false;
+                    }
                 }
                 break;
 
-                //Старт игры
+                //Вперед N
                 case 10:
                 {
                     StartGame();
                 }
                 break;
 
+                //Назад L
+                case 11:
+                {
+                    StartGame();
+                }
+                break;
 
                 }
             }
@@ -350,6 +427,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
             }
             break;
+
             case WM_PAINT:
             {
                
@@ -361,18 +439,95 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 EndPaint(hWnd, &ps);
             }
             break;
-     /*   case WM_DRAWITEM:
+
+//Прорисовка
+        case WM_DRAWITEM:
         {
             DrawButton((LPDRAWITEMSTRUCT)lParam);
             return true;
-        }*/
+        }
+
+            //esc при игре 
+            case WM_KEYDOWN:
+            {
+                switch (wParam)
+                {
+                case 0x1B:
+                {
+                    if (FlagGameStart == true) {
+                        ShowWindow(BackButt, SW_SHOW);
+                        break;
+                    }
+                }
+                break;
+                }
+            }
+
+
+        //Вхождение корсора в окно
         case WM_SETCURSOR:
         {
-            if ((HWND)wParam == My)
+            //Игра
+            if ((HWND)wParam == GameButt)
             {
-                SetFocus(My);
+                SetFocus(GameButt);
             }
-            else if ((HWND)wParam != My)
+
+            //Настройки
+            else if ((HWND)wParam == OptionButt)
+            {
+                SetFocus(OptionButt);
+            }
+
+            //Выход
+            else if ((HWND)wParam == ExitButt)
+            {
+                SetFocus(ExitButt);
+            }
+
+            //Оконый
+            else if ((HWND)wParam == WindowsSizeSreen)
+            {
+                SetFocus(WindowsSizeSreen);
+            }
+
+            //Полноэкранный
+            else if ((HWND)wParam == SreenFull)
+            {
+                SetFocus(SreenFull);
+            }
+
+            //Играть
+            else if ((HWND)wParam == ButtonLevel1Start)
+            {
+                SetFocus(ButtonLevel1Start);
+            }
+
+            //Назад
+            else if ((HWND)wParam == BackButt)
+            {
+                SetFocus(BackButt);
+            }
+
+            //Следующий уровень
+            else if ((HWND)wParam == NextLevelButt)
+            {
+                SetFocus(NextLevelButt);
+            }
+
+            //Предыдущий
+            else if ((HWND)wParam == LastLevelButt)
+            {
+                SetFocus(LastLevelButt);
+            }
+
+            //Изменить музыку
+            else if ((HWND)wParam == FaliOpen)
+            {
+                SetFocus(FaliOpen);
+            }
+
+            else if ((HWND)wParam != GameButt)
             {
                 SetFocus(hWnd);
             }
@@ -387,54 +542,50 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return 0;
     }
 
-//Создание потока
+//Создание потока фона
 VOID TreaderMusic(LPWSTR Path) {
-    DWORD   dwThreadIdArray;
-    HANDLE  hThreadArray;
-
-    hThreadArray = CreateThread(
+    hThreadFon = CreateThread(
         NULL,                   
         0,                      
         (LPTHREAD_START_ROUTINE)MidiWin,
         Path,
         0,                      
-        &dwThreadIdArray);   
+        &dwThreadId);   
 
-    if (hThreadArray == NULL)
+    if (hThreadFon == NULL)
     {
         ExitProcess(3);
     }
 
-    CloseHandle(hThreadArray);
+    CloseHandle(hThreadFon);
 }
 
-//Фоновая музыка
-/*VOID TreaderBackgroundMusic(LPWSTR Path) {
-    hThreadMusicBackground = CreateThread(
+//Создание потока игры
+VOID TreaderMusicGame(LPWSTR Path) {
+    hThreadGame = CreateThread(
         NULL,
         0,
         (LPTHREAD_START_ROUTINE)MidiWin,
         Path,
         0,
-        &dwThreadIdMusiBackground);
+        &dwThreadIdGame);
 
-    if (hThreadMusicBackground == NULL)
+    if (hThreadGame == NULL)
     {
         ExitProcess(3);
     }
 
-    CloseHandle(hThreadMusicBackground);
+    CloseHandle(hThreadGame);
 }
-*/
 
 //Воспроизведение музыки
 VOID MidiWin(LPWSTR Path) {
     IGraphBuilder* pGraph = NULL;
-    IMediaControl* pControl = NULL;
     IMediaEvent* pEvent = NULL;
+    IMediaControl* pControl = NULL;
 
     // Initialize the COM library.
-    HRESULT hr = CoInitialize(NULL);
+    hr = CoInitialize(NULL);
     if (FAILED(hr))
     {
         printf("ERROR - Could not initialize COM library");
@@ -463,7 +614,7 @@ VOID MidiWin(LPWSTR Path) {
         {
             // Wait for completion.
             long evCode;
-            pEvent->WaitForCompletion(INFINITE, &evCode);
+            pEvent->WaitForCompletion(timeMusic, &evCode);
 
             // Note: Do not use INFINITE in a real application, because it
             // can block indefinitely.
@@ -515,7 +666,7 @@ bool exitFullscreen(HWND hwnd, int windowX, int windowY, int windowedWidth, int 
 
 //Начало игры пример
 VOID StartGame() {
-
+    UsengBackground = SoftLevel1Background;
 }
 
 //Устоновка картинки фоном
@@ -523,7 +674,7 @@ VOID SetBackgroundIcons(){
     HWND hWnd = GetActiveWindow();
     HDC hdc = GetDC(hWnd), hdcMem;
 
-    HBITMAP arrow = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\Menu.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    HBITMAP arrow = (HBITMAP)LoadImage(NULL, UsengBackground, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     hdcMem = CreateCompatibleDC(hdc);
 
     SelectObject(hdcMem, arrow);
@@ -531,7 +682,6 @@ VOID SetBackgroundIcons(){
 }
 
 //Прорисовка кнопки
-/*
 VOID DrawButton(LPDRAWITEMSTRUCT lpInfo) {
     HGDIOBJ obj;
     HBRUSH noactive = CreateSolidBrush(RGB(260, 260, 260)), focus = CreateSolidBrush(RGB(0, 255, 0)), select = CreateSolidBrush(RGB(255, 0, 0));
@@ -544,35 +694,141 @@ VOID DrawButton(LPDRAWITEMSTRUCT lpInfo) {
     FillRect(Owner, &lpInfo->rcItem, noactive);
     switch (lpInfo->itemAction)
     {
-    case ODA_FOCUS:
+        case ODA_FOCUS:
         if (lpInfo->itemState & ODS_FOCUS)
             FillRect(Owner, &lpInfo->rcItem, focus);
         if (lpInfo->itemState & ODS_CHECKED)
             FillRect(Owner, &lpInfo->rcItem, noactive);
         break;
-    case ODA_SELECT:
+        case ODA_SELECT:
         if (lpInfo->itemState & ODS_SELECTED)
             FillRect(Owner, &lpInfo->rcItem, select);
         break;
-    case ODA_DRAWENTIRE:
+        case ODA_DRAWENTIRE:
         FillRect(Owner, &lpInfo->rcItem, noactive);
         break;
     }
 
-    wchar_t wtext[] = L"Text Button";
-    SetBkMode(Owner, TRANSPARENT);
-    SetTextColor(Owner, RGB(255, 255, 0));
-    TextOutW(Owner, 15, 5, wtext, wcslen(wtext));
+   // SetBackgroundIcons();
+
+     //lpInfo->hwndItem;
+    switch (lpInfo->CtlID)
+    {
+        //Музыка
+        case 4:
+        {
+            wchar_t wtext[] = L"Начать игру";
+            SetBkMode(Owner, TRANSPARENT);
+            SetTextColor(Owner, RGB(255, 255, 0));
+            TextOutW(Owner, 20, 5, wtext, wcslen(wtext));
+        }
+        break;
+
+        //Полный экран
+        case 1:
+        {
+            wchar_t wtext[] = L"Полноэкранный";
+            SetBkMode(Owner, TRANSPARENT);
+            SetTextColor(Owner, RGB(255, 255, 0));
+            TextOutW(Owner, 5, 5, wtext, wcslen(wtext));
+        }
+        break;
+
+        //Окрный режим
+        case 3:
+        {
+            wchar_t wtext[] = L"Оконный";
+            SetBkMode(Owner, TRANSPARENT);
+            SetTextColor(Owner, RGB(255, 255, 0));
+            TextOutW(Owner, 30, 5, wtext, wcslen(wtext));
+        }
+        break;
+
+        //FaliDialog
+        case 5:
+        {
+            wchar_t wtext[] = L"Изменить музыку";
+            SetBkMode(Owner, TRANSPARENT);
+            SetTextColor(Owner, RGB(255, 255, 0));
+            TextOutW(Owner, 15, 5, wtext, wcslen(wtext));
+        }
+        break;
+
+        //Exit
+        case 6:
+        {
+            wchar_t wtext[] = L"Выход";
+            SetBkMode(Owner, TRANSPARENT);
+            SetTextColor(Owner, RGB(255, 255, 0));
+            TextOutW(Owner, 40, 5, wtext, wcslen(wtext));
+        }
+        break;
+
+        //Настройки
+        case 7: 
+        {
+            wchar_t wtext[] = L"Настройки";
+            SetBkMode(Owner, TRANSPARENT);
+            SetTextColor(Owner, RGB(255, 255, 0));
+            TextOutW(Owner, 30, 5, wtext, wcslen(wtext));
+        }
+        break;
+
+        //Играть
+        case 8:
+        {
+            wchar_t wtext[] = L"Игра";
+            SetBkMode(Owner, TRANSPARENT);
+            SetTextColor(Owner, RGB(255, 255, 0));
+            TextOutW(Owner, 45, 5, wtext, wcslen(wtext));
+        }
+        break;
+
+        //Назад
+        case 9:
+        {
+            wchar_t wtext[] = L"Назад";
+            SetBkMode(Owner, TRANSPARENT);
+            SetTextColor(Owner, RGB(255, 255, 0));
+            TextOutW(Owner, 40, 5, wtext, wcslen(wtext));
+        }
+        break;
+
+        //Вперед
+        case 10:
+        {
+            wchar_t wtext[] = L"N";
+            SetBkMode(Owner, TRANSPARENT);
+            SetTextColor(Owner, RGB(255, 255, 0));
+            TextOutW(Owner, 10, 5, wtext, wcslen(wtext));
+        }
+        break;
+
+        //Назад
+        case 11:
+        {
+            wchar_t wtext[] = L"L";
+            SetBkMode(Owner, TRANSPARENT);
+            SetTextColor(Owner, RGB(255, 255, 0));
+            TextOutW(Owner, 10, 5, wtext, wcslen(wtext));
+        }
+        break;
+
+        default:
+            break;
+    }
+
+
 
     BitBlt(lpInfo->hDC, 0, 0, lpInfo->rcItem.right, lpInfo->rcItem.bottom, Owner, 0, 0, SRCCOPY);
     DeleteObject(SelectObject(Owner, obj));
     DeleteDC(Owner);
-}*/
+}
 
 //Вспомогательный метод для изменение цвета
-void MyButton(HWND & hwnd, int x, int y, int Width, int Height, int xe, int xy, HWND hParent)
+void MyButton(HWND & hwnd, int x, int y, int Width, int Height, int xe, int xy, UINT num, HWND hParent)
 {
-    hwnd = CreateWindow(L"Button", L"Butt", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | BS_OWNERDRAW | BS_PUSHBUTTON, x, y, Width, Height, hParent, (HMENU)13, (HINSTANCE)GetWindowLong(hParent, -6), NULL);
+    hwnd = CreateWindow(L"Button", L"Butt", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | BS_OWNERDRAW | BS_PUSHBUTTON, x, y, Width, Height, hParent, (HMENU)num, (HINSTANCE)GetWindowLong(hParent, -6), NULL);
     HRGN rgn = CreateRoundRectRgn(0, 0, Width, Height, xe, xy);
-    SetWindowRgn(My, rgn, TRUE);
+    SetWindowRgn(hwnd, rgn, TRUE);
 }
