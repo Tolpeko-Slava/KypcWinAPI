@@ -1,4 +1,8 @@
-﻿#include "MicroMain.h"
+﻿#pragma comment(lib, "Dsound.lib")
+#pragma comment(lib, "strmiids.lib")
+#pragma comment(lib, "dxguid.lib")
+
+#include "MicroMain.h"
 #include "Windows.h"
 #include "Winuser.h"
 #include "mmeapi.h"
@@ -12,21 +16,23 @@
 #include <tchar.h>
 #include <strsafe.h>
 #include <commdlg.h>
-
-#pragma comment(lib, "strmiids.lib")
+#include <DSound.h>
 
 #define MAX_LOADSTRING 100
+#define ID_TIMER 100
+#define TIMER_INTERVAL 25
+#define NO_TIMER -1
 
 // Глобальные переменные:
-HINSTANCE hInst;                                // текущий экземпляр
-HWND hWnd;//Основное окно
-HWND StringEx;//ButtonMusicTest
+HINSTANCE hInst; // текущий экземпляр
+HWND hWnd;       //Основное окно
+HWND StringEx;   //ButtonMusicTest
 HWND SreenFull;
 HWND WindowsSizeSreen;
 HWND ExitButt;
 HWND OptionButt;
 HWND GameButt;
-HWND  ButtonLevel1Start;
+HWND ButtonLevel1Start;
 HWND BackButt;
 HWND NextLevelButt;
 HWND LastLevelButt;
@@ -38,15 +44,31 @@ DWORD  dwThreadId;
 HANDLE  hThreadGame;
 DWORD   dwThreadIdGame;
 
+//Игра
+UINT SrenXCordinat; //ширина
+UINT SrenYCordinat; //высота
+HBITMAP hBmp = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\temp1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+UINT xf = 765;
+UINT yf = 750;
+int IdTemer = NO_TIMER;
+
+//Музыка
+IGraphBuilder* pGraph = NULL;
+IMediaEvent* pEvent = NULL;
+IMediaControl* pControl = NULL;
+
+IGraphBuilder* pGraphG = NULL;
+IMediaEvent* pEventG = NULL;
+IMediaControl* pControlG = NULL;
 
 long timeMusic = 22080;
 HRESULT hr;
-bool FlagGameStart;
+bool FlagGameStart = false;
 
 LPWSTR SoftMusic = (LPWSTR)L"..\\Music\\ZeroBlood.mp3";
-LPWSTR SoftLevel1Music = (LPWSTR)L"..\\Music\\AM.mp3";
+LPWSTR SoftLevel1Music = (LPWSTR)L"..\\Music\\Yarmak.mp3";
 LPWSTR SoftLevel2Music = (LPWSTR)L"..\\Music\\Viagra.mp3";
-LPWSTR SoftLevel3Music = (LPWSTR)L"..\\Music\\Yarmak.mp3";
+LPWSTR SoftLevel3Music = (LPWSTR)L"..\\Music\\AM.mp3";
 
 LPWSTR UserLevelMusic = (LPWSTR)L"";
 
@@ -80,6 +102,8 @@ VOID TreaderMusicGame(LPWSTR Path);
 VOID StartGame();
 VOID SetBackgroundIcons();
 VOID DrawButton(LPDRAWITEMSTRUCT lpInfo);
+VOID MidiWinG(LPWSTR Path);
+VOID MoveBall();
 bool enterFullscreen(HWND hwnd, int fullscreenWidth, int fullscreenHeight, int colourBits, int refreshRate);
 bool exitFullscreen(HWND hwnd, int windowX, int windowY, int windowedWidth, int windowedHeight, int windowedPaddingX, int windowedPaddingY);
 
@@ -254,14 +278,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 //Музыка
                 case 4:
                 {
-                    //TreaderMusicGame(SoftLevel1Music);
+                   // TreaderMusicGame(SoftLevel1Music);
 
-                   // pEvent->Release();
+                    pControl->Stop();
+                    CloseHandle(hThreadFon);
+                    hThreadFon = NULL;
+                    dwThreadId = NULL;
 
-                   // ResumeThread(hThreadFon);
-                   // SuspendThread(hThreadFon);
-                  //  DestroyWindow(hThreadFon);
-                    //CloseHandle(hThreadFon);
+                    TreaderMusicGame(SoftLevel1Music);
 
                     ShowWindow(StringEx, SW_HIDE);
                     ShowWindow(BackButt, SW_HIDE);
@@ -378,6 +402,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     if (FlagGameStart == true)
                     {
                         UsengBackground = SoftBackground;
+                        
+                        pControlG->Stop();
+                        CloseHandle(hThreadGame);
+
+                        hThreadGame = NULL;
+                        dwThreadIdGame = NULL;
+
+                        TreaderMusic(SoftMusic);
 
                         ShowWindow(ButtonLevel1Start, SW_SHOW);
                         ShowWindow(FaliOpen, SW_SHOW);
@@ -409,11 +441,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 }
             }
-            /*
-            if (HIWORD(wParam) == BN_SETFOCUS)
-            {
-                exitFullscreen(hWnd, 100, 100, 800, 600, 50, 50);
-            }*/
 
 
             int wmId = LOWORD(wParam);
@@ -426,7 +453,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 //    return DefWindowProc(hWnd, message, wParam, lParam);
                 }
             }
-            break;
+        break;
+
+        case WM_SIZE: {
+            SrenXCordinat = LOWORD(lParam); 
+            SrenYCordinat = HIWORD(lParam);
+        }
+        break;
 
             case WM_PAINT:
             {
@@ -434,13 +467,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 PAINTSTRUCT ps;
                 hdc = BeginPaint(hWnd, &ps);
 
-                SetBackgroundIcons();
+                SetBackgroundIcons();             
+
+                if (FlagGameStart == true)
+                {
+                   /* if (hBmp != NULL)
+                    {*/
+                        HDC bmpDC = CreateCompatibleDC(hdc);
+                        SelectObject(bmpDC, hBmp);
+
+                        BitBlt(hdc, xf, yf, 20, 20, bmpDC, 0, 0, SRCCOPY);
+                        DeleteDC(bmpDC);
+
+                 /*   }
+                    else
+                    {
+                        Rectangle(hdc, xf, yf, 20, 20);
+                    }*/
+                }
+
 
                 EndPaint(hWnd, &ps);
+
             }
             break;
 
-//Прорисовка
+        //Прорисовка
         case WM_DRAWITEM:
         {
             DrawButton((LPDRAWITEMSTRUCT)lParam);
@@ -455,6 +507,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case 0x1B:
                 {
                     if (FlagGameStart == true) {
+                        InvalidateRect(hWnd, NULL, false);
                         ShowWindow(BackButt, SW_SHOW);
                         break;
                     }
@@ -463,6 +516,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
             }
 
+        case WM_TIMER:
+        {
+            case 1:
+            {
+                MoveBall();
+                InvalidateRect(hWnd, NULL, false);
+                break;
+            }
+            break;
+        }
 
         //Вхождение корсора в окно
         case WM_SETCURSOR:
@@ -565,7 +628,7 @@ VOID TreaderMusicGame(LPWSTR Path) {
     hThreadGame = CreateThread(
         NULL,
         0,
-        (LPTHREAD_START_ROUTINE)MidiWin,
+        (LPTHREAD_START_ROUTINE)MidiWinG,
         Path,
         0,
         &dwThreadIdGame);
@@ -580,10 +643,6 @@ VOID TreaderMusicGame(LPWSTR Path) {
 
 //Воспроизведение музыки
 VOID MidiWin(LPWSTR Path) {
-    IGraphBuilder* pGraph = NULL;
-    IMediaEvent* pEvent = NULL;
-    IMediaControl* pControl = NULL;
-
     // Initialize the COM library.
     hr = CoInitialize(NULL);
     if (FAILED(hr))
@@ -620,9 +679,53 @@ VOID MidiWin(LPWSTR Path) {
             // can block indefinitely.
         }
     }
-    pControl->Release();
-    pEvent->Release();
-    pGraph->Release();
+  //  pControl->Release();
+  //  pEvent->Release();
+  //  pGraph->Release();
+    CoUninitialize();
+}
+
+//Воспроизведение игравой музыки
+VOID MidiWinG(LPWSTR Path) {
+    // Initialize the COM library.
+    hr = CoInitialize(NULL);
+    if (FAILED(hr))
+    {
+        printf("ERROR - Could not initialize COM library");
+        return;
+    }
+
+    // Create the filter graph manager and query for interfaces.
+    hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER,
+        IID_IGraphBuilder, (void**)&pGraphG);
+    if (FAILED(hr))
+    {
+        printf("ERROR - Could not create the Filter Graph Manager.");
+        return;
+    }
+    
+    hr = pGraphG->QueryInterface(IID_IMediaControl, (void**)&pControlG);
+    hr = pGraphG->QueryInterface(IID_IMediaEvent, (void**)&pEventG);
+
+    // Build the graph. IMPORTANT: Change this string to a file on your system.
+    hr = pGraphG->RenderFile((LPCWSTR)Path, NULL);
+    if (SUCCEEDED(hr))
+    {
+        // Run the graph.
+        hr = pControlG->Run();
+        if (SUCCEEDED(hr))
+        {
+            // Wait for completion.
+            long evCode;
+            pEventG->WaitForCompletion(timeMusic, &evCode);
+
+            // Note: Do not use INFINITE in a real application, because it
+            // can block indefinitely.
+        }
+    }
+  //  pControlG->Release();
+  //  pEventG->Release();
+  //  pGraphG->Release();
     CoUninitialize();
 }
 
@@ -667,6 +770,34 @@ bool exitFullscreen(HWND hwnd, int windowX, int windowY, int windowedWidth, int 
 //Начало игры пример
 VOID StartGame() {
     UsengBackground = SoftLevel1Background;
+
+
+    InvalidateRect(hWnd,NULL,false);
+    
+    IdTemer = SetTimer(hWnd, ID_TIMER, TIMER_INTERVAL, (TIMERPROC)NULL);
+
+}
+
+//Кординаты пикселя
+int KofeX = 1, KofeY = 1;
+VOID MoveBall()
+{
+    xf = xf + KofeX * 5;
+    yf = yf + KofeY * 5;
+    if ((xf + 20 < SrenXCordinat) && (yf + 20 < SrenYCordinat))
+    {
+        return;
+    }
+    if ((xf + 20 >= SrenXCordinat)||(xf < 0))
+    {
+        KofeX = KofeX * (- 1);
+        return;
+    }
+    if ((yf + 20 >= SrenYCordinat) || (yf < 0))
+    {
+        KofeY = KofeY * (-1);
+        return;
+    }
 }
 
 //Устоновка картинки фоном
@@ -679,6 +810,8 @@ VOID SetBackgroundIcons(){
 
     SelectObject(hdcMem, arrow);
     BitBlt(hdc, 0, 0, 1920, 1080, hdcMem, 0, 0, SRCCOPY);
+
+    DeleteDC(hdc);
 }
 
 //Прорисовка кнопки
@@ -709,9 +842,6 @@ VOID DrawButton(LPDRAWITEMSTRUCT lpInfo) {
         break;
     }
 
-   // SetBackgroundIcons();
-
-     //lpInfo->hwndItem;
     switch (lpInfo->CtlID)
     {
         //Музыка
