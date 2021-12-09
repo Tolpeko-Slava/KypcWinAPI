@@ -48,9 +48,63 @@ DWORD   dwThreadIdGame;
 UINT SrenXCordinat; //ширина
 UINT SrenYCordinat; //высота
 HBITMAP hBmp = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\temp1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+HBITMAP hBmpT = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\tempT.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 UINT xf = 765;
-UINT yf = 750;
+UINT yf = 720;
+UINT xft = 745;
+UINT yft = 760;
 int IdTemer = NO_TIMER;
+int KofeX = 1, KofeY = 1;
+RECT bootonTable;
+bool ESCFlag = false;
+bool FlagSpace = false;
+UINT GameOverHight;
+
+UINT Blok1X = 50;
+UINT Blok1Y = 40;
+HBITMAP Blok1 = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\Blok1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+bool FlagBlok1 = true;
+
+UINT Blok2X = 220;
+UINT Blok2Y = 40;
+HBITMAP Blok2 = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\Blok1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+bool FlagBlok2 = true;
+
+UINT Blok3X = 500;
+UINT Blok3Y = 40;
+HBITMAP Blok3 = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\Blok1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+bool FlagBlok3 = true;
+
+UINT Blok4X = 790;
+UINT Blok4Y = 40;
+HBITMAP Blok4 = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\Blok1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+bool FlagBlok4 = true;
+
+UINT Blok5X = 1000;
+UINT Blok5Y = 40;
+HBITMAP Blok5 = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\Blok1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+bool FlagBlok5 = true;
+
+UINT Blok6X = 240;
+UINT Blok6Y = 120;
+HBITMAP Blok6 = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\Blok1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+bool FlagBlok6 = true;
+
+UINT Blok7X = 440;
+UINT Blok7Y = 120;
+HBITMAP Blok7 = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\Blok1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+bool FlagBlok7 = true;
+
+UINT Blok8X = 630;
+UINT Blok8Y = 120;
+HBITMAP Blok8 = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\Blok1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+bool FlagBlok8 = true;
+
+UINT Blok9X = 460;
+UINT Blok9Y = 340;
+HBITMAP Blok9 = (HBITMAP)LoadImage(NULL, L"..\\BackgroundGame\\Blok1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+bool FlagBlok9 = true;
+
 
 //Музыка
 IGraphBuilder* pGraph = NULL;
@@ -98,12 +152,16 @@ LPWSTR UserPathMusic;
 //Предобъявление
 VOID MidiWin(LPWSTR Path);
 VOID TreaderMusic(LPWSTR Path);
-VOID TreaderMusicGame(LPWSTR Path);
+VOID TreaderMusicGame();
 VOID StartGame();
 VOID SetBackgroundIcons();
 VOID DrawButton(LPDRAWITEMSTRUCT lpInfo);
-VOID MidiWinG(LPWSTR Path);
+VOID MidiWinG();
 VOID MoveBall();
+VOID MoveTable(int KofeMove);
+VOID SetStartGame();
+VOID SetGame();
+UINT ChekBlok(UINT XPik, UINT YPik, UINT XBlok, UINT YBlok);
 bool enterFullscreen(HWND hwnd, int fullscreenWidth, int fullscreenHeight, int colourBits, int refreshRate);
 bool exitFullscreen(HWND hwnd, int windowX, int windowY, int windowedWidth, int windowedHeight, int windowedPaddingX, int windowedPaddingY);
 
@@ -178,7 +236,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    //Игра
    StringEx = CreateWindowEx(NULL, L"Edit", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL,
-       10, 60, 250, 30, hWnd, (HMENU)2, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
+       1900, 60, 20, 30, hWnd, (HMENU)2, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
   /* Button = CreateWindow(L"button", L"Начать игру", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
        700, 560, 120, 30, hWnd, (HMENU)4, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
    StringEx = CreateWindowEx(NULL, L"Edit", NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL,
@@ -191,7 +249,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
        550, 400, 30, 30, hWnd, (HMENU)11, (HINSTANCE)GetWindowLongA(hWnd, -6), NULL);
 */
    MyButton(ButtonLevel1Start, 700, 560, 120, 30, 40, 30, 4, hWnd);
-   MyButton(FaliOpen, 300, 200, 150, 30, 40, 30, 5, hWnd);
+   MyButton(FaliOpen, 685, 500, 150, 30, 40, 30, 5, hWnd);
    MyButton(NextLevelButt, 950, 400,  30, 30, 40, 30, 10, hWnd);
    MyButton(LastLevelButt, 550, 400,  30, 30, 40, 30, 11, hWnd);
 
@@ -242,7 +300,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    //Экран начало
    enterFullscreen(hWnd, 1080, 1920, 5, 60);
 
-   ShowWindow(StringEx, SW_HIDE);
+  // ShowWindow(StringEx, SW_HIDE);
    //ShowWindow(ButtGameStart, SW_HIDE);
    ShowWindow(SreenFull, SW_HIDE);
    ShowWindow(BackButt, SW_HIDE);
@@ -259,6 +317,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    FlagGameStart = false;
 
    UsengBackground = SoftBackground;
+
+  // ZeroMemory(UserPathMusic,450);
 
    return TRUE;
 }
@@ -282,12 +342,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                     pControl->Stop();
                     CloseHandle(hThreadFon);
+
+                    dwThreadId = 0;
                     hThreadFon = NULL;
-                    dwThreadId = NULL;
+                    
+                    GetWindowText(StringEx,UserPathMusic,450);
 
-                    TreaderMusicGame(SoftLevel1Music);
+                    if (UserPathMusic == NULL) {
+                        UserPathMusic = SoftLevel1Music;
+                        TreaderMusicGame();
+                    }
+                    else
+                    {
+                        TreaderMusicGame();
+                    }
 
-                    ShowWindow(StringEx, SW_HIDE);
+                   // ShowWindow(StringEx, SW_HIDE);
                     ShowWindow(BackButt, SW_HIDE);
                     ShowWindow(ButtonLevel1Start, SW_HIDE);
                     ShowWindow(NextLevelButt, SW_HIDE);
@@ -296,6 +366,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                     FlagGameStart = true;
 
+                    bootonTable.left = 0;
+                    bootonTable.right = SrenXCordinat;
+                    bootonTable.bottom = yft + 25;
+                    bootonTable.top = yft;
+
+                    GameOverHight = 3;
+                    SetGame();
                     StartGame();
                 }
                 break;
@@ -317,26 +394,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 //FaliDialog
                 case 5:
                 {
-                    OPENFILENAME ofn;
-                    char szFile[260]; 
-                    HWND hwnd; 
-                    HANDLE hf;
-                    hwnd = NULL;
-                    ZeroMemory(&ofn, sizeof(ofn));
+                    OPENFILENAME ofn = {0};
+                    TCHAR szFile[420] = {0};
+                  //  HWND hwnd; 
+                   // HANDLE hf;
+                  //  hwnd = NULL;
+                   // ZeroMemory(&ofn, sizeof(ofn));
+
                     ofn.lStructSize = sizeof(ofn);
-                    ofn.hwndOwner = hwnd;
-                    ofn.lpstrFile = (LPWSTR)szFile;
+                    ofn.hwndOwner = hWnd;
+                    ofn.lpstrFile = szFile;
                     ofn.nMaxFile = sizeof(szFile);
-                    ofn.lpstrFilter = L"Music (*.mp3)\0*.mp3\0";
-                    ofn.nFilterIndex = 2;
+                    ofn.lpstrFilter = L"Music.mp3\0*.mp3\0";
+                    //
+                    ofn.nFilterIndex = 1;
                     ofn.lpstrFileTitle = NULL;
                     ofn.nMaxFileTitle = 0;
                     ofn.lpstrInitialDir = NULL;
                     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
                     GetOpenFileName(&ofn);
 
-                    UserPathMusic = ofn.lpstrFile;
-                    SetWindowText(StringEx, (LPWSTR)ofn.lpstrFile);
+                   // DeleteDC(hwnd);
+                    //strcat((char*)ofn.lpstrFile, '\0');
+                    UserPathMusic = (LPWSTR)ofn.lpstrFile;// +'\0';
+                    SetWindowText(StringEx, (LPWSTR)UserPathMusic);
+                    InvalidateRect(hWnd, NULL, false);
                    // UserPathMusic = ofn.lpstrFile;
 
                     //SetBackgroundIcons();
@@ -368,7 +450,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 {
                     ShowWindow(ButtonLevel1Start, SW_SHOW);
                     ShowWindow(FaliOpen, SW_SHOW);
-                    ShowWindow(StringEx, SW_SHOW);
+                   // ShowWindow(StringEx, SW_SHOW);
                     ShowWindow(BackButt, SW_SHOW);
                    // ShowWindow(ButtGameStart, SW_SHOW);
 
@@ -392,7 +474,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                         ShowWindow(ButtonLevel1Start, SW_HIDE);
                         ShowWindow(FaliOpen, SW_HIDE);
-                        ShowWindow(StringEx, SW_HIDE);
+                       // ShowWindow(StringEx, SW_HIDE);
                         ShowWindow(SreenFull, SW_HIDE);
                         ShowWindow(WindowsSizeSreen, SW_HIDE);
                         ShowWindow(NextLevelButt, SW_HIDE);
@@ -406,14 +488,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         pControlG->Stop();
                         CloseHandle(hThreadGame);
 
+                        dwThreadIdGame = 0;
                         hThreadGame = NULL;
-                        dwThreadIdGame = NULL;
 
                         TreaderMusic(SoftMusic);
 
                         ShowWindow(ButtonLevel1Start, SW_SHOW);
                         ShowWindow(FaliOpen, SW_SHOW);
-                        ShowWindow(StringEx, SW_SHOW);
+                       // ShowWindow(StringEx, SW_SHOW);
                         ShowWindow(NextLevelButt, SW_SHOW);
                         ShowWindow(LastLevelButt, SW_SHOW);
 
@@ -471,19 +553,99 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 if (FlagGameStart == true)
                 {
-                   /* if (hBmp != NULL)
-                    {*/
+
                         HDC bmpDC = CreateCompatibleDC(hdc);
                         SelectObject(bmpDC, hBmp);
 
                         BitBlt(hdc, xf, yf, 20, 20, bmpDC, 0, 0, SRCCOPY);
                         DeleteDC(bmpDC);
 
-                 /*   }
-                    else
-                    {
-                        Rectangle(hdc, xf, yf, 20, 20);
-                    }*/
+                        bmpDC = CreateCompatibleDC(hdc);
+                        SelectObject(bmpDC, hBmpT);
+
+                        BitBlt(hdc, xft, yft, 140, 25, bmpDC, 0, 0, SRCCOPY);
+                        DeleteDC(bmpDC);
+
+                        if (FlagBlok1 == true)
+                        {
+                            bmpDC = CreateCompatibleDC(hdc);
+                            SelectObject(bmpDC, Blok1);
+
+                            BitBlt(hdc, Blok1X, Blok1Y, 140, 25, bmpDC, 0, 0, SRCCOPY);
+                            DeleteDC(bmpDC);
+                        }
+
+                        if (FlagBlok2 == true)
+                        {
+                            bmpDC = CreateCompatibleDC(hdc);
+                            SelectObject(bmpDC, Blok1);
+
+                            BitBlt(hdc, Blok2X, Blok2Y, 140, 25, bmpDC, 0, 0, SRCCOPY);
+                            DeleteDC(bmpDC);
+                        }
+
+                        if (FlagBlok3 == true)
+                        {
+                            bmpDC = CreateCompatibleDC(hdc);
+                            SelectObject(bmpDC, Blok1);
+
+                            BitBlt(hdc, Blok3X, Blok3Y, 140, 25, bmpDC, 0, 0, SRCCOPY);
+                            DeleteDC(bmpDC);
+                        }
+
+                        if (FlagBlok4 == true)
+                        {
+                            bmpDC = CreateCompatibleDC(hdc);
+                            SelectObject(bmpDC, Blok1);
+
+                            BitBlt(hdc, Blok4X, Blok4Y, 140, 25, bmpDC, 0, 0, SRCCOPY);
+                            DeleteDC(bmpDC);
+                        }
+
+                        if (FlagBlok5 == true)
+                        {
+                            bmpDC = CreateCompatibleDC(hdc);
+                            SelectObject(bmpDC, Blok1);
+
+                            BitBlt(hdc, Blok5X, Blok5Y, 140, 25, bmpDC, 0, 0, SRCCOPY);
+                            DeleteDC(bmpDC);
+                        }
+
+                        if (FlagBlok6 == true)
+                        {
+                            bmpDC = CreateCompatibleDC(hdc);
+                            SelectObject(bmpDC, Blok1);
+
+                            BitBlt(hdc, Blok6X, Blok6Y, 140, 25, bmpDC, 0, 0, SRCCOPY);
+                            DeleteDC(bmpDC);
+                        }
+
+                        if (FlagBlok7 == true)
+                        {
+                            bmpDC = CreateCompatibleDC(hdc);
+                            SelectObject(bmpDC, Blok1);
+
+                            BitBlt(hdc, Blok7X, Blok7Y, 140, 25, bmpDC, 0, 0, SRCCOPY);
+                            DeleteDC(bmpDC);
+                        }
+
+                        if (FlagBlok8 == true)
+                        {
+                            bmpDC = CreateCompatibleDC(hdc);
+                            SelectObject(bmpDC, Blok1);
+
+                            BitBlt(hdc, Blok8X, Blok8Y, 140, 25, bmpDC, 0, 0, SRCCOPY);
+                            DeleteDC(bmpDC);
+                        }
+
+                        if (FlagBlok9 == true)
+                        {
+                            bmpDC = CreateCompatibleDC(hdc);
+                            SelectObject(bmpDC, Blok1);
+
+                            BitBlt(hdc, Blok9X, Blok9Y, 140, 25, bmpDC, 0, 0, SRCCOPY);
+                            DeleteDC(bmpDC);
+                        }
                 }
 
 
@@ -504,25 +666,103 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
                 switch (wParam)
                 {
-                case 0x1B:
-                {
-                    if (FlagGameStart == true) {
-                        InvalidateRect(hWnd, NULL, false);
-                        ShowWindow(BackButt, SW_SHOW);
-                        break;
+                    //ESC
+                    case 0x1B:
+                    {
+                        if (FlagGameStart == true) {
+                            if (ESCFlag == false) {
+                                InvalidateRect(hWnd, NULL, false);
+                                KillTimer(hWnd, IdTemer);
+                                ShowWindow(BackButt, SW_SHOW);
+                                ESCFlag = true;
+                                break;
+                            }
+                            else
+                            {
+                                IdTemer = SetTimer(hWnd, ID_TIMER, TIMER_INTERVAL, (TIMERPROC)NULL);
+                                ShowWindow(BackButt, SW_HIDE);
+                                ESCFlag = false;
+                                break;
+                            }
+                        }
                     }
-                }
-                break;
+                    break;
+
+                    //<-
+                    case 0x25:
+                    {
+                        if (FlagGameStart == true) {
+                            if (ESCFlag == false)
+                            {
+                                if (FlagSpace == true)
+                                {
+                                    MoveTable(-1);
+                                    InvalidateRect(hWnd, &bootonTable, false);
+                                }
+                                else
+                                {
+                                    MoveTable(-1);
+                                    xf = xf - 10;
+                                    InvalidateRect(hWnd, NULL, false);
+                                }
+                            }
+                        }
+                       // break;
+                    }
+                    break;
+
+                    //->
+                    case 0x27:
+                    {
+                        if (FlagGameStart == true) {
+                            if (ESCFlag == false)
+                            {
+                                if (FlagSpace == true)
+                                {
+                                    MoveTable(1);
+                                    InvalidateRect(hWnd, &bootonTable, false);
+                                }
+                                else
+                                {
+                                    MoveTable(1);
+                                    xf = xf + 10;
+                                    InvalidateRect(hWnd, NULL, false);
+                                }
+                            }
+                        }
+                       // break;
+                    }
+                    break;
+
+                    //Space
+                    case 0x20:
+                    {
+                        if (FlagGameStart == true) {
+                            if (ESCFlag == false)
+                            {
+                                IdTemer = SetTimer(hWnd, ID_TIMER, TIMER_INTERVAL, (TIMERPROC)NULL);
+                                FlagSpace = true;
+                            }
+                        }
+                        // break;
+                    }
+                    break;
                 }
             }
 
         case WM_TIMER:
         {
-            case 1:
+            case ID_TIMER:
             {
-                MoveBall();
-                InvalidateRect(hWnd, NULL, false);
-                break;
+                if (ESCFlag == false)
+                {
+                    if (FlagSpace == true)
+                    {
+                        MoveBall();
+                        InvalidateRect(hWnd, NULL, false);
+                        break;
+                    }
+                }
             }
             break;
         }
@@ -624,12 +864,12 @@ VOID TreaderMusic(LPWSTR Path) {
 }
 
 //Создание потока игры
-VOID TreaderMusicGame(LPWSTR Path) {
+VOID TreaderMusicGame() {
     hThreadGame = CreateThread(
         NULL,
         0,
         (LPTHREAD_START_ROUTINE)MidiWinG,
-        Path,
+        0,
         0,
         &dwThreadIdGame);
 
@@ -686,7 +926,7 @@ VOID MidiWin(LPWSTR Path) {
 }
 
 //Воспроизведение игравой музыки
-VOID MidiWinG(LPWSTR Path) {
+VOID MidiWinG() {
     // Initialize the COM library.
     hr = CoInitialize(NULL);
     if (FAILED(hr))
@@ -708,21 +948,22 @@ VOID MidiWinG(LPWSTR Path) {
     hr = pGraphG->QueryInterface(IID_IMediaEvent, (void**)&pEventG);
 
     // Build the graph. IMPORTANT: Change this string to a file on your system.
-    hr = pGraphG->RenderFile((LPCWSTR)Path, NULL);
-    if (SUCCEEDED(hr))
-    {
-        // Run the graph.
-        hr = pControlG->Run();
+        hr = pGraphG->RenderFile((LPCWSTR)UserPathMusic, NULL);
         if (SUCCEEDED(hr))
         {
-            // Wait for completion.
-            long evCode;
-            pEventG->WaitForCompletion(timeMusic, &evCode);
+            // Run the graph.
+            hr = pControlG->Run();
+            if (SUCCEEDED(hr))
+            {
+                // Wait for completion.
+                long evCode;
+                pEventG->WaitForCompletion(timeMusic, &evCode);
 
-            // Note: Do not use INFINITE in a real application, because it
-            // can block indefinitely.
+                // Note: Do not use INFINITE in a real application, because it
+                // can block indefinitely.
+            }
         }
-    }
+
   //  pControlG->Release();
   //  pEventG->Release();
   //  pGraphG->Release();
@@ -767,37 +1008,222 @@ bool exitFullscreen(HWND hwnd, int windowX, int windowY, int windowedWidth, int 
     return isChangeSuccessful;
 }
 
-//Начало игры пример
+//Начало игры
 VOID StartGame() {
     UsengBackground = SoftLevel1Background;
-
 
     InvalidateRect(hWnd,NULL,false);
     
     IdTemer = SetTimer(hWnd, ID_TIMER, TIMER_INTERVAL, (TIMERPROC)NULL);
 
+    KillTimer(hWnd, IdTemer);
+
+    KofeX = 1;
+    KofeY = 1;
 }
 
 //Кординаты пикселя
-int KofeX = 1, KofeY = 1;
 VOID MoveBall()
 {
     xf = xf + KofeX * 5;
     yf = yf + KofeY * 5;
-    if ((xf + 20 < SrenXCordinat) && (yf + 20 < SrenYCordinat))
+
+    UINT chek;
+
+    if (FlagBlok1 == true)
     {
-        return;
+        chek = ChekBlok(xf, yf, Blok1X, Blok1Y);
+
+        if (chek != 0)
+        {
+            FlagBlok1 = false;
+            return;
+        }
+
     }
-    if ((xf + 20 >= SrenXCordinat)||(xf < 0))
+    if (FlagBlok2 == true)
     {
-        KofeX = KofeX * (- 1);
-        return;
+        chek = ChekBlok(xf, yf, Blok2X, Blok2Y);
+
+        if (chek != 0)
+        {
+            FlagBlok2 = false;
+            return;
+        }
+
     }
-    if ((yf + 20 >= SrenYCordinat) || (yf < 0))
+    if (FlagBlok3 == true)
+    {
+        chek = ChekBlok(xf, yf, Blok3X, Blok3Y);
+
+        if (chek != 0)
+        {
+            FlagBlok3 = false;
+            return;
+        }
+
+    }
+    if (FlagBlok4 == true)
+    {
+        chek = ChekBlok(xf, yf, Blok4X, Blok4Y);
+
+        if (chek != 0)
+        {
+            FlagBlok4 = false;
+            return;
+        }
+
+    }
+    if (FlagBlok5 == true)
+    {
+        chek = ChekBlok(xf, yf, Blok5X, Blok5Y);
+
+        if (chek != 0)
+        {
+            FlagBlok5 = false;
+            return;
+        }
+
+    }
+    if (FlagBlok6== true)
+    {
+        chek = ChekBlok(xf, yf, Blok6X, Blok6Y);
+
+        if (chek != 0)
+        {
+            FlagBlok6 = false;
+            return;
+        }
+
+    }
+    if (FlagBlok7 == true)
+    {
+        chek = ChekBlok(xf, yf, Blok7X, Blok7Y);
+
+        if (chek != 0)
+        {
+            FlagBlok7 = false;
+            return;
+        }
+
+    }
+    if (FlagBlok8 == true)
+    {
+        chek = ChekBlok(xf, yf, Blok8X, Blok8Y);
+
+        if (chek != 0)
+        {
+            FlagBlok8 = false;
+            return;
+        }
+
+    }
+    if (FlagBlok9 == true)
+    {
+        chek = ChekBlok(xf, yf, Blok9X, Blok9Y);
+
+        if (chek != 0)
+        {
+            FlagBlok9 = false;
+            return;
+        }
+
+    }
+
+    //Платформа
+    if (( yf + 20 == yft) && ( xf <= xft + 140 ) && ( xf >= xft ))
     {
         KofeY = KofeY * (-1);
         return;
     }
+
+    if (xf + 20 >= SrenXCordinat)
+    {
+        KofeX = KofeX * (- 1);
+        return;
+    }
+    if (xf <= 0)
+    {
+        KofeX = KofeX * (-1);
+        return;
+    }
+    if (yf + 20 >= SrenYCordinat)
+    {
+        GameOverHight = GameOverHight - 1;
+        SetStartGame();
+        return;
+    }
+    if (yf <= 0)
+    {
+        KofeY = KofeY * (-1);
+        return;
+    }
+    return;
+}
+
+VOID SetStartGame()
+{
+    KofeX = 1;
+    KofeY = 1;
+    xf = 765;
+    yf = 720;
+    xft = 745;
+    yft = 760;
+    FlagSpace = false;
+
+}
+
+VOID SetGame()
+{
+    FlagBlok1 = true;
+    FlagBlok2 = true;
+    FlagBlok3 = true;
+    FlagBlok4 = true;
+    FlagBlok5 = true;
+    FlagBlok6 = true;
+    FlagBlok7 = true;
+    FlagBlok8 = true;
+    FlagBlok9 = true;
+}
+
+//Проверка на блок
+UINT ChekBlok( UINT XPik, UINT YPik, UINT XBlok, UINT YBlok)
+{
+    UINT WBlok = 140;
+    UINT HBlok = 25;
+    UINT WP = 20;
+    UINT HP = 20;
+
+    if ((XPik <= XBlok + WBlok) && (YPik + HP >= YBlok) && (YPik <= YBlok + HBlok) && (XPik + WP >= XBlok))
+    {
+        KofeY = KofeY * (-1);
+        return 1;
+    }
+    if ((YPik <= YBlok + HBlok) && (XPik + WP >= XBlok)&& (XPik <= XBlok + WBlok)&& (YPik + HP >= YBlok))
+    {
+        KofeX = KofeX * (-1);
+        return 2;
+    }
+    return 0;
+}
+
+//Движение платформы
+VOID MoveTable(int KofeMove)
+{
+    xft = xft + KofeMove * 10;
+
+    if (xft + 140 >= SrenXCordinat)
+    {
+        xft = xft - 10;
+        return;
+    }
+    if ((xft <= 0)||(xft > SrenXCordinat))
+    {
+        xft = xft + 10;
+        int r = 3;
+        return;
+    }
+    return;
 }
 
 //Устоновка картинки фоном
